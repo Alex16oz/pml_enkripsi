@@ -53,10 +53,26 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
     PmlEnkripsiTheme {
-        Greeting("Android")
+        // Replicate the Scaffold structure here to make the preview work
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("PML Enkripsi") },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color(0xFF03FCE8)
+                    )
+                )
+            }
+        ) { innerPadding ->
+            Greeting(
+                name = "Android",
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
     }
 }
