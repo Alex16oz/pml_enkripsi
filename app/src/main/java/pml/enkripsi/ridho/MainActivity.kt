@@ -1,7 +1,7 @@
 package pml.enkripsi.ridho
 
 import android.os.Bundle
-import android.widget.Toast // Import untuk Toast
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,12 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext // Import untuk LocalContext
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pml.enkripsi.ridho.ui.theme.PmlEnkripsiTheme
 
-// Import yang diperlukan untuk AES
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -43,30 +42,22 @@ import android.util.Base64
 
 class MainActivity : ComponentActivity() {
 
-    /**
-     * Membuat SecretKeySpec 128-bit (16 byte) dari string kunci apa pun.
-     * Ini menggunakan 16 byte pertama dari hash SHA-256 dari kunci yang diberikan.
-     */
+
     private fun getAESKey(key: String): SecretKeySpec {
         val sha = MessageDigest.getInstance("SHA-256")
         val keyBytes = sha.digest(key.toByteArray(Charsets.UTF_8))
-        // Gunakan 128 bit (16 byte) pertama dari hash sebagai kunci
+
         val truncatedKeyBytes = keyBytes.copyOfRange(0, 16)
         return SecretKeySpec(truncatedKeyBytes, "AES")
     }
 
-    /**
-     * Mengenkripsi teks menggunakan AES-128/CBC/PKCS5Padding.
-     * IV (Initialization Vector) acak 16 byte dibuat dan
-     * ditambahkan di awal ciphertext.
-     * Hasilnya di-encode ke Base64.
-     */
+
     private fun encrypt(text: String, key: String): String {
         return try {
             val secretKey = getAESKey(key)
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
 
-            // Buat IV acak 16 byte
+
             val ivBytes = ByteArray(16)
             SecureRandom().nextBytes(ivBytes)
             val ivSpec = IvParameterSpec(ivBytes)
@@ -74,7 +65,7 @@ class MainActivity : ComponentActivity() {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
             val encryptedBytes = cipher.doFinal(text.toByteArray(Charsets.UTF_8))
 
-            // Gabungkan IV dan ciphertext, lalu encode ke Base64
+
             val combined = ivBytes + encryptedBytes
             Base64.encodeToString(combined, Base64.DEFAULT)
         } catch (e: Exception) {
@@ -83,16 +74,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Mendekripsi teks terenkripsi Base64 (yang berisi IV + ciphertext).
-     * Menggunakan AES-128/CBC/PKCS5Padding.
-     */
+
     private fun decrypt(base64EncryptedText: String, key: String): String {
         return try {
             val combined = Base64.decode(base64EncryptedText, Base64.DEFAULT)
             if (combined.size < 16) return "Error: Data korup/salah."
 
-            // Ekstrak IV (16 byte pertama) dan ciphertext (sisanya)
+
             val ivBytes = combined.copyOfRange(0, 16)
             val encryptedBytes = combined.copyOfRange(16, combined.size)
 
@@ -106,7 +94,7 @@ class MainActivity : ComponentActivity() {
             String(decryptedBytes, Charsets.UTF_8)
         } catch (e: Exception) {
             e.printStackTrace()
-            // Error umum jika kunci salah atau data korup (gagal padding)
+
             "Error: Gagal dekripsi (kunci salah atau data korup)."
         }
     }
@@ -124,15 +112,15 @@ class MainActivity : ComponentActivity() {
                         TopAppBar(
                             title = { Text("PML Enkripsi") },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color(0xFF03FCE8) // Warna TopAppBar dari file asli
+                                containerColor = Color(0xFF03FCE8)
                             )
                         )
                     }
                 ) { innerPadding ->
-                    // Memanggil Composable baru dengan padding dari Scaffold
+
                     EncryptionForm(
                         modifier = Modifier.padding(innerPadding),
-                        // Teruskan fungsi encrypt/decrypt ke composable
+
                         onEncrypt = ::encrypt,
                         onDecrypt = ::decrypt
                     )
@@ -146,38 +134,38 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EncryptionForm(
     modifier: Modifier = Modifier,
-    onEncrypt: (text: String, key: String) -> String, // Terima fungsi enkripsi
-    onDecrypt: (text: String, key: String) -> String  // Terima fungsi dekripsi
+    onEncrypt: (text: String, key: String) -> String,
+    onDecrypt: (text: String, key: String) -> String
 ) {
-    // State untuk kartu Enkripsi
+
     var textToEncrypt by remember { mutableStateOf("") }
     var encryptionKeyEncrypt by remember { mutableStateOf("") }
     var encryptedText by remember { mutableStateOf("") }
 
-    // State untuk kartu Dekripsi
+
     var textToDecrypt by remember { mutableStateOf("") }
     var encryptionKeyDecrypt by remember { mutableStateOf("") }
     var decryptedText by remember { mutableStateOf("") }
 
-    // Dapatkan Context untuk Toast
+
     val context = LocalContext.current
 
-    // LazyColumn untuk menampung kedua kartu dan memungkinkan scrolling
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp), // Padding horizontal untuk tepi layar
-        verticalArrangement = Arrangement.spacedBy(16.dp), // Jarak antar kartu
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Kartu Enkripsi
+
         item {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp), // Padding di atas kartu pertama
+                    .padding(top = 16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFBAFC03) // Warna kartu enkripsi
+                    containerColor = Color(0xFFBAFC03)
                 )
             ) {
                 Column(
@@ -200,15 +188,15 @@ fun EncryptionForm(
                     )
                     Button(
                         onClick = {
-                            // <-- PERUBAHAN: Logika validasi kunci 16 karakter
+
                             if (textToEncrypt.isBlank() || encryptionKeyEncrypt.isBlank()) {
                                 encryptedText = "Teks dan Kunci tidak boleh kosong"
                             } else if (encryptionKeyEncrypt.length != 16) {
-                                // Tampilkan Toast jika kunci tidak 16 karakter
+
                                 Toast.makeText(context, "Kunci enkripsi harus 16 karakter!", Toast.LENGTH_SHORT).show()
-                                encryptedText = "" // Kosongkan hasil jika kunci salah
+                                encryptedText = ""
                             } else {
-                                // Panggil logika enkripsi AES 128 bit
+
                                 encryptedText = onEncrypt(textToEncrypt, encryptionKeyEncrypt)
                             }
                         },
@@ -227,14 +215,14 @@ fun EncryptionForm(
             }
         }
 
-        // Kartu Dekripsi
+
         item {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp), // Padding di bawah kartu kedua
+                    .padding(bottom = 16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFf07dd7) // Warna kartu dekripsi
+                    containerColor = Color(0xFFf07dd7)
                 )
             ) {
                 Column(
@@ -243,7 +231,7 @@ fun EncryptionForm(
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 1. Text field "masukan teks untuk di dekripsi"
+
                     OutlinedTextField(
                         value = textToDecrypt,
                         onValueChange = { textToDecrypt = it },
@@ -251,7 +239,7 @@ fun EncryptionForm(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // 2. Text field "encription key"
+
                     OutlinedTextField(
                         value = encryptionKeyDecrypt,
                         onValueChange = { encryptionKeyDecrypt = it },
@@ -259,18 +247,18 @@ fun EncryptionForm(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // 3. Tombol "dekripsi"
+
                     Button(
                         onClick = {
-                            // <-- PERUBAHAN: Logika validasi kunci 16 karakter
+
                             if (textToDecrypt.isBlank() || encryptionKeyDecrypt.isBlank()) {
                                 decryptedText = "Teks dan Kunci tidak boleh kosong"
                             } else if (encryptionKeyDecrypt.length != 16) {
-                                // Tampilkan Toast jika kunci tidak 16 karakter
+
                                 Toast.makeText(context, "Kunci dekripsi harus 16 karakter!", Toast.LENGTH_SHORT).show()
-                                decryptedText = "" // Kosongkan hasil jika kunci salah
+                                decryptedText = ""
                             } else {
-                                // Panggil logika dekripsi AES 128 bit
+
                                 decryptedText = onDecrypt(textToDecrypt, encryptionKeyDecrypt)
                             }
                         },
@@ -279,7 +267,7 @@ fun EncryptionForm(
                         Text("dekripsi")
                     }
 
-                    // 4. Text field "text terdekripsi"
+
                     OutlinedTextField(
                         value = decryptedText,
                         onValueChange = { },
@@ -308,7 +296,7 @@ fun EncryptionFormPreview() {
                 )
             }
         ) { innerPadding ->
-            // Untuk preview, kita bisa teruskan lambda kosong atau placeholder
+
             EncryptionForm(
                 modifier = Modifier.padding(innerPadding),
                 onEncrypt = { text, key -> "Encrypted: $text with $key" },
