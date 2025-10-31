@@ -134,7 +134,7 @@ fun EncryptionForm(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .padding(bottom = 16.dp), // Padding di bawah kartu kedua
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFA103FC) // Warna kartu dekripsi
+                    containerColor = Color(0xFFf07dd7) // Warna kartu dekripsi
                 )
             ) {
                 Column(
