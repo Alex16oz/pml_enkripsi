@@ -31,7 +31,85 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pml.enkripsi.ridho.ui.theme.PmlEnkripsiTheme
 
+// Import yang diperlukan untuk AES
+import java.security.MessageDigest
+import java.security.SecureRandom
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import android.util.Base64
+
 class MainActivity : ComponentActivity() {
+
+    /**
+     * Membuat SecretKeySpec 128-bit (16 byte) dari string kunci apa pun.
+     * Ini menggunakan 16 byte pertama dari hash SHA-256 dari kunci yang diberikan.
+     */
+    private fun getAESKey(key: String): SecretKeySpec {
+        val sha = MessageDigest.getInstance("SHA-256")
+        val keyBytes = sha.digest(key.toByteArray(Charsets.UTF_8))
+        // Gunakan 128 bit (16 byte) pertama dari hash sebagai kunci
+        val truncatedKeyBytes = keyBytes.copyOfRange(0, 16)
+        return SecretKeySpec(truncatedKeyBytes, "AES")
+    }
+
+    /**
+     * Mengenkripsi teks menggunakan AES-128/CBC/PKCS5Padding.
+     * IV (Initialization Vector) acak 16 byte dibuat dan
+     * ditambahkan di awal ciphertext.
+     * Hasilnya di-encode ke Base64.
+     */
+    private fun encrypt(text: String, key: String): String {
+        return try {
+            val secretKey = getAESKey(key)
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+
+            // Buat IV acak 16 byte
+            val ivBytes = ByteArray(16)
+            SecureRandom().nextBytes(ivBytes)
+            val ivSpec = IvParameterSpec(ivBytes)
+
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
+            val encryptedBytes = cipher.doFinal(text.toByteArray(Charsets.UTF_8))
+
+            // Gabungkan IV dan ciphertext, lalu encode ke Base64
+            val combined = ivBytes + encryptedBytes
+            Base64.encodeToString(combined, Base64.DEFAULT)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Error: ${e.message}"
+        }
+    }
+
+    /**
+     * Mendekripsi teks terenkripsi Base64 (yang berisi IV + ciphertext).
+     * Menggunakan AES-128/CBC/PKCS5Padding.
+     */
+    private fun decrypt(base64EncryptedText: String, key: String): String {
+        return try {
+            val combined = Base64.decode(base64EncryptedText, Base64.DEFAULT)
+            if (combined.size < 16) return "Error: Data korup/salah."
+
+            // Ekstrak IV (16 byte pertama) dan ciphertext (sisanya)
+            val ivBytes = combined.copyOfRange(0, 16)
+            val encryptedBytes = combined.copyOfRange(16, combined.size)
+
+            val secretKey = getAESKey(key)
+            val ivSpec = IvParameterSpec(ivBytes)
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+            val decryptedBytes = cipher.doFinal(encryptedBytes)
+
+            String(decryptedBytes, Charsets.UTF_8)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Error umum jika kunci salah atau data korup (gagal padding)
+            "Error: Gagal dekripsi (kunci salah atau data korup)."
+        }
+    }
+
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +129,10 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     // Memanggil Composable baru dengan padding dari Scaffold
                     EncryptionForm(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding),
+                        // Teruskan fungsi encrypt/decrypt ke composable
+                        onEncrypt = ::encrypt,
+                        onDecrypt = ::decrypt
                     )
                 }
             }
@@ -61,7 +142,11 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EncryptionForm(modifier: Modifier = Modifier) {
+fun EncryptionForm(
+    modifier: Modifier = Modifier,
+    onEncrypt: (text: String, key: String) -> String, // Terima fungsi enkripsi
+    onDecrypt: (text: String, key: String) -> String  // Terima fungsi dekripsi
+) {
     // State untuk kartu Enkripsi
     var textToEncrypt by remember { mutableStateOf("") }
     var encryptionKeyEncrypt by remember { mutableStateOf("") }
@@ -110,7 +195,12 @@ fun EncryptionForm(modifier: Modifier = Modifier) {
                     )
                     Button(
                         onClick = {
-                            encryptedText = "Teks '$textToEncrypt' dienkripsi dengan kunci '$encryptionKeyEncrypt' (logika belum diimplementasi)"
+                            // Panggil logika enkripsi AES 128 bit
+                            if (textToEncrypt.isNotBlank() && encryptionKeyEncrypt.isNotBlank()) {
+                                encryptedText = onEncrypt(textToEncrypt, encryptionKeyEncrypt)
+                            } else {
+                                encryptedText = "Teks dan Kunci tidak boleh kosong"
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -162,8 +252,12 @@ fun EncryptionForm(modifier: Modifier = Modifier) {
                     // 3. Tombol "dekripsi"
                     Button(
                         onClick = {
-                            // Logika placeholder. Ganti ini dengan logika dekripsi Anda.
-                            decryptedText = "Teks '$textToDecrypt' didekripsi dengan kunci '$encryptionKeyDecrypt' (logika belum diimplementasi)"
+                            // Panggil logika dekripsi AES 128 bit
+                            if (textToDecrypt.isNotBlank() && encryptionKeyDecrypt.isNotBlank()) {
+                                decryptedText = onDecrypt(textToDecrypt, encryptionKeyDecrypt)
+                            } else {
+                                decryptedText = "Teks dan Kunci tidak boleh kosong"
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -199,7 +293,12 @@ fun EncryptionFormPreview() {
                 )
             }
         ) { innerPadding ->
-            EncryptionForm(modifier = Modifier.padding(innerPadding))
+            // Untuk preview, kita bisa teruskan lambda kosong atau placeholder
+            EncryptionForm(
+                modifier = Modifier.padding(innerPadding),
+                onEncrypt = { text, key -> "Encrypted: $text with $key" },
+                onDecrypt = { text, key -> "Decrypted: $text with $key" }
+            )
         }
     }
 }
