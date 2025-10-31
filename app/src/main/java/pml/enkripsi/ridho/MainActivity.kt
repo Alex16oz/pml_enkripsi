@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,68 +62,123 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EncryptionForm(modifier: Modifier = Modifier) {
-    // Variabel state untuk menyimpan nilai dari text fields
+    // State untuk kartu Enkripsi
     var textToEncrypt by remember { mutableStateOf("") }
-    var encryptionKey by remember { mutableStateOf("") }
+    var encryptionKeyEncrypt by remember { mutableStateOf("") }
     var encryptedText by remember { mutableStateOf("") }
 
-    // Column untuk menata kartu di layar
-    Column(
+    // State untuk kartu Dekripsi
+    var textToDecrypt by remember { mutableStateOf("") }
+    var encryptionKeyDecrypt by remember { mutableStateOf("") }
+    var decryptedText by remember { mutableStateOf("") }
+
+    // LazyColumn untuk menampung kedua kartu dan memungkinkan scrolling
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp), // Padding tambahan untuk tepi layar
-        verticalArrangement = Arrangement.Top, // Menempatkan kartu di bagian atas (di bawah TopAppBar)
+            .padding(horizontal = 16.dp), // Padding horizontal untuk tepi layar
+        verticalArrangement = Arrangement.spacedBy(16.dp), // Jarak antar kartu
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(), // Kartu akan mengisi lebar
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFBAFC03) // Warna kartu yang diminta
-            )
-        ) {
-            // Column untuk konten di dalam kartu
-            Column(
+        // Kartu Enkripsi
+        item {
+            Card(
                 modifier = Modifier
-                    .padding(16.dp) // Padding internal untuk konten kartu
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp) // Jarak antar elemen
+                    .fillMaxWidth()
+                    .padding(top = 16.dp), // Padding di atas kartu pertama
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFBAFC03) // Warna kartu enkripsi
+                )
             ) {
-                // 1. Text field "masukan teks untuk si enkripsi"
-                OutlinedTextField(
-                    value = textToEncrypt,
-                    onValueChange = { textToEncrypt = it },
-                    label = { Text("masukan teks untuk di enkripsi") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // 2. Text field "encription key"
-                OutlinedTextField(
-                    value = encryptionKey,
-                    onValueChange = { encryptionKey = it },
-                    label = { Text("encription key") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // 3. Tombol "enkripsi"
-                Button(
-                    onClick = {
-                        // Logika placeholder. Ganti ini dengan logika enkripsi Anda.
-                        encryptedText = "Teks '$textToEncrypt' dienkripsi dengan kunci '$encryptionKey' (logika belum diimplementasi)"
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("enkripsi")
+                    OutlinedTextField(
+                        value = textToEncrypt,
+                        onValueChange = { textToEncrypt = it },
+                        label = { Text("masukan teks untuk di enkripsi") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = encryptionKeyEncrypt,
+                        onValueChange = { encryptionKeyEncrypt = it },
+                        label = { Text("encription key") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = {
+                            encryptedText = "Teks '$textToEncrypt' dienkripsi dengan kunci '$encryptionKeyEncrypt' (logika belum diimplementasi)"
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("enkripsi")
+                    }
+                    OutlinedTextField(
+                        value = encryptedText,
+                        onValueChange = { },
+                        label = { Text("text terenkripsi") },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
+            }
+        }
 
-                // 4. Text field "text ter enkripsi"
-                OutlinedTextField(
-                    value = encryptedText,
-                    onValueChange = { }, // Tidak bisa diubah, hanya-baca
-                    label = { Text("text ter enkripsi") },
-                    readOnly = true,
-                    modifier = Modifier.fillMaxWidth()
+        // Kartu Dekripsi
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp), // Padding di bawah kartu kedua
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFA103FC) // Warna kartu dekripsi
                 )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 1. Text field "masukan teks untuk di dekripsi"
+                    OutlinedTextField(
+                        value = textToDecrypt,
+                        onValueChange = { textToDecrypt = it },
+                        label = { Text("masukan teks untuk di dekripsi") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // 2. Text field "encription key"
+                    OutlinedTextField(
+                        value = encryptionKeyDecrypt,
+                        onValueChange = { encryptionKeyDecrypt = it },
+                        label = { Text("encription key") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // 3. Tombol "dekripsi"
+                    Button(
+                        onClick = {
+                            // Logika placeholder. Ganti ini dengan logika dekripsi Anda.
+                            decryptedText = "Teks '$textToDecrypt' didekripsi dengan kunci '$encryptionKeyDecrypt' (logika belum diimplementasi)"
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("dekripsi")
+                    }
+
+                    // 4. Text field "text terdekripsi"
+                    OutlinedTextField(
+                        value = decryptedText,
+                        onValueChange = { },
+                        label = { Text("text terdekripsi") },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
@@ -133,7 +189,6 @@ fun EncryptionForm(modifier: Modifier = Modifier) {
 @Composable
 fun EncryptionFormPreview() {
     PmlEnkripsiTheme {
-        // Preview dengan Scaffold agar terlihat mirip dengan aplikasi
         Scaffold(
             topBar = {
                 TopAppBar(
