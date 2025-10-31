@@ -1,6 +1,7 @@
 package pml.enkripsi.ridho
 
 import android.os.Bundle
+import android.widget.Toast // Import untuk Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext // Import untuk LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import pml.enkripsi.ridho.ui.theme.PmlEnkripsiTheme
@@ -157,6 +159,9 @@ fun EncryptionForm(
     var encryptionKeyDecrypt by remember { mutableStateOf("") }
     var decryptedText by remember { mutableStateOf("") }
 
+    // Dapatkan Context untuk Toast
+    val context = LocalContext.current
+
     // LazyColumn untuk menampung kedua kartu dan memungkinkan scrolling
     LazyColumn(
         modifier = modifier
@@ -195,11 +200,16 @@ fun EncryptionForm(
                     )
                     Button(
                         onClick = {
-                            // Panggil logika enkripsi AES 128 bit
-                            if (textToEncrypt.isNotBlank() && encryptionKeyEncrypt.isNotBlank()) {
-                                encryptedText = onEncrypt(textToEncrypt, encryptionKeyEncrypt)
-                            } else {
+                            // <-- PERUBAHAN: Logika validasi kunci 16 karakter
+                            if (textToEncrypt.isBlank() || encryptionKeyEncrypt.isBlank()) {
                                 encryptedText = "Teks dan Kunci tidak boleh kosong"
+                            } else if (encryptionKeyEncrypt.length != 16) {
+                                // Tampilkan Toast jika kunci tidak 16 karakter
+                                Toast.makeText(context, "Kunci enkripsi harus 16 karakter!", Toast.LENGTH_SHORT).show()
+                                encryptedText = "" // Kosongkan hasil jika kunci salah
+                            } else {
+                                // Panggil logika enkripsi AES 128 bit
+                                encryptedText = onEncrypt(textToEncrypt, encryptionKeyEncrypt)
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -252,11 +262,16 @@ fun EncryptionForm(
                     // 3. Tombol "dekripsi"
                     Button(
                         onClick = {
-                            // Panggil logika dekripsi AES 128 bit
-                            if (textToDecrypt.isNotBlank() && encryptionKeyDecrypt.isNotBlank()) {
-                                decryptedText = onDecrypt(textToDecrypt, encryptionKeyDecrypt)
-                            } else {
+                            // <-- PERUBAHAN: Logika validasi kunci 16 karakter
+                            if (textToDecrypt.isBlank() || encryptionKeyDecrypt.isBlank()) {
                                 decryptedText = "Teks dan Kunci tidak boleh kosong"
+                            } else if (encryptionKeyDecrypt.length != 16) {
+                                // Tampilkan Toast jika kunci tidak 16 karakter
+                                Toast.makeText(context, "Kunci dekripsi harus 16 karakter!", Toast.LENGTH_SHORT).show()
+                                decryptedText = "" // Kosongkan hasil jika kunci salah
+                            } else {
+                                // Panggil logika dekripsi AES 128 bit
+                                decryptedText = onDecrypt(textToDecrypt, encryptionKeyDecrypt)
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
